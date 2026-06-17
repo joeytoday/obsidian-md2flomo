@@ -1,6 +1,6 @@
 {
 	"name": "md2flomo",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "将 Obsidian 中的 Markdown 文档导入到 flomo",
 	"main": "main.js",
 	"scripts": {

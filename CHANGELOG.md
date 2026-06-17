@@ -1,12 +1,17 @@
 
 # Changelog
 
-所有对本项目的显著变更都将记录在此文件中。
+## 1.0.1 - 2026-06-17
 
-格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
-版本控制遵循[语义化版本](https://semver.org/lang/zh-CN/).
+### Changed
+- 代码模块化重构，按功能拆分为独立文件，提升可维护性
+- 统一发布中心界面为中文
+- 统一内容处理管线，确保单篇导入与批量发布行为一致
 
-## 0.4.3 - 2025-09-01
+### Fixed
+- 修正 package.json 版本号与 manifest.json 不一致的问题
+
+## 0.5.3 - 2025-09-07
 ### Added
 - [x] 插件设置中支持配置 flomo API Token ✅ 2025-08-31
 - [x] 支持测试 API 通信（测试发送内容） ✅ 2025-08-31

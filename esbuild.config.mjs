@@ -15,35 +15,40 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = (process.argv[2] === "production");
 console.log('Production mode:', prod);
 
+// 公共构建配置
+const commonConfig = {
+	banner: {
+		js: banner,
+	},
+	entryPoints: ["main.ts"],
+	bundle: true,
+	external: [
+		"obsidian",
+		"electron",
+		"@codemirror/autocomplete",
+		"@codemirror/collab",
+		"@codemirror/commands",
+		"@codemirror/language",
+		"@codemirror/lint",
+		"@codemirror/search",
+		"@codemirror/state",
+		"@codemirror/view",
+		"@lezer/common",
+		"@lezer/highlight",
+		"@lezer/lr",
+		...builtins],
+	format: "cjs",
+	target: "es2018",
+	logLevel: "debug",
+	treeShaking: true,
+	outfile: "main.js",
+};
+
 // 使用build而不是context，简化流程
 try {
 	const result = await esbuild.build({
-		banner: {
-			js: banner,
-		},
-		entryPoints: ["main.ts"],
-		bundle: true,
-		external: [
-			"obsidian",
-			"electron",
-			"@codemirror/autocomplete",
-			"@codemirror/collab",
-			"@codemirror/commands",
-			"@codemirror/language",
-			"@codemirror/lint",
-			"@codemirror/search",
-			"@codemirror/state",
-			"@codemirror/view",
-			"@lezer/common",
-			"@lezer/highlight",
-			"@lezer/lr",
-			...builtins],
-		format: "cjs",
-		target: "es2018",
-		logLevel: "debug", // 使用更详细的日志级别
+		...commonConfig,
 		sourcemap: prod ? false : "inline",
-		treeShaking: true,
-		outfile: "main.js",
 		minify: prod,
 	});
 	console.log('Build successful! Output file:', 'main.js');
@@ -55,33 +60,8 @@ try {
 if (!prod) {
 	console.log('Watching for changes...');
 	const watcher = await esbuild.context({
-		// 相同的配置
-		banner: {
-			js: banner,
-		},
-		entryPoints: ["main.ts"],
-		bundle: true,
-		external: [
-			"obsidian",
-			"electron",
-			"@codemirror/autocomplete",
-			"@codemirror/collab",
-			"@codemirror/commands",
-			"@codemirror/language",
-			"@codemirror/lint",
-			"@codemirror/search",
-			"@codemirror/state",
-			"@codemirror/view",
-			"@lezer/common",
-			"@lezer/highlight",
-			"@lezer/lr",
-			...builtins],
-		format: "cjs",
-		target: "es2018",
-		logLevel: "debug",
+		...commonConfig,
 		sourcemap: "inline",
-		treeShaking: true,
-		outfile: "main.js",
 		minify: false,
 	});
 	await watcher.watch();

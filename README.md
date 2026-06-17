@@ -6,6 +6,33 @@
 
 ---
 
+## 📸 使用效果
+
+### 单篇发布
+- 点击侧边栏发布按钮（小飞机图标）
+- 使用命令栏发布
+
+![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
+
+如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
+
+![](./assets/md2flomo-sendstatus.gif)
+
+#### 去除格式效果
+
+![](./assets/md2flomo-sendcard-clean.gif)
+
+#### 发布后台状态修复
+
+![](./assets/md2flomo-pub-status.gif)
+
+### 批量发布
+
+![](./assets/md2flomo-sendnotes.gif)
+
+
+---
+
 ## ✨ 功能特性
 
 - 🔑 在插件设置中配置 flomo API Token  
@@ -52,43 +79,7 @@
 	- `published`：已发送笔记  
 	- `unpublished`：未发送笔记  
 
----
-
-## 🛠️ 开发规划
-
-- v 0.4.3: 最小可用版本、Obsidian 插件市场上线  
-- v 0.4.0: 格式优化、链接清理、上传反馈  
-- v 0.5.0: 设置界面优化、上传历史记录、错误提示  
-- v 1.0.0: 批量上传、UI 美化、国际化、多语言支持
-
 详细版本更新见 👉 [CHANGELOG](./CHNANGELOG.md)
-
----
-
-## 📸 使用截图
-
-### 单篇发布
-- 点击侧边栏发布按钮（小飞机图标）
-- 使用命令栏发布
-
-![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
-
-如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
-
-![](./assets/md2flomo-sendstatus.gif)
-
-#### 去除格式效果
-
-![](./assets/md2flomo-sendcard-clean.gif)
-
-#### 发布后台状态修复
-
-![](./assets/md2flomo-pub-status.gif)
-
-### 批量发布
-
-![](./assets/md2flomo-sendnotes.gif)
-
 
 ---
 
@@ -102,4 +93,4 @@
 ## 📬 联系方式
 
 - 作者：@joeytoday 
-- 邮箱： joeytoday247@outlook.com 
+- 邮箱： joeytoday632@outlook.com 
