@@ -66,31 +66,46 @@ export class BlockImportConfirmModal extends Modal {
         const publishButton = buttonContainer.createEl('button', { text: '确认导入' });
         publishButton.onclick = async () => {
             if (this.selectedBlocks.length === 0) {
-                new Notice('请先选择要发布的内容');
+                new Notice('❌ 请先选择要发布的内容');
                 return;
             }
-            
-            new Notice(`正在导入 ${this.selectedBlocks.length} 条内容到flomo...`);
-            
-            let successCount = 0;
-            for (const index of this.selectedBlocks) {
-                const block = this.blocks[index];
-                const success = await sendToFlomo(block, this.apiUrl);
-                if (success) {
-                    successCount++;
+
+            publishButton.disabled = true;
+            publishButton.setText('导入中...');
+
+            try {
+                const totalCount = this.selectedBlocks.length;
+                new Notice(`正在导入 ${totalCount} 条内容到flomo...`);
+
+                let successCount = 0;
+                for (let i = 0; i < this.selectedBlocks.length; i++) {
+                    const index = this.selectedBlocks[i];
+                    const block = this.blocks[index];
+                    const result = await sendToFlomo(block, this.apiUrl);
+                    if (result.success) {
+                        successCount++;
+                    }
+                    new Notice(`导入进度: ${i + 1}/${totalCount}`);
                 }
-            }
-            
-            if (successCount > 0) {
-                new Notice(`✅ 成功导入 ${successCount} 条内容！`);
-                
-                if (this.file) {
-                    await updateSendFlomoStatus(this.app, this.file, true);
+
+                if (successCount > 0) {
+                    new Notice(`✅ 成功导入 ${successCount} 条内容！`);
+
+                    if (this.file) {
+                        await updateSendFlomoStatus(this.app, this.file, true);
+                    }
+                } else {
+                    new Notice('❌ 导入失败，请检查API配置');
+                    publishButton.disabled = false;
+                    publishButton.setText('确认导入');
                 }
-            } else {
-                new Notice('❌ 导入失败，请检查API配置');
+            } catch (error) {
+                console.error('导入block到flomo时发生错误:', error);
+                new Notice('❌ 导入过程中发生错误');
+                publishButton.disabled = false;
+                publishButton.setText('确认导入');
             }
-            
+
             this.close();
         };
     }

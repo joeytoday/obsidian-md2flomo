@@ -13,6 +13,12 @@ export interface PublishedNoteRecord {
     contentHash: string;
 }
 
+// 发送结果
+export interface SendResult {
+    success: boolean;
+    error?: string;
+}
+
 // 笔记项接口
 export interface NoteItem {
     file: TFile;

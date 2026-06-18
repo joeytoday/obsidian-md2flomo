@@ -1,77 +1,66 @@
-import { Notice } from 'obsidian';
+import type { SendResult } from './types';
 
-// 发送内容到flomo - 使用表单格式
-export async function sendToFlomo(content: string, apiUrl: string): Promise<boolean> {
-    try {
-        if (!apiUrl || apiUrl.trim() === '') {
-            console.error('flomo API URL不能为空');
-            new Notice('flomo API URL 未设置，请先在插件设置中配置');
-            return false;
-        }
-        
-        let normalizedApiUrl = apiUrl.trim();
-        
-        // 确保URL以斜杠结尾（参考flomo官方API格式）
-        if (!normalizedApiUrl.endsWith('/') && !normalizedApiUrl.includes('?')) {
-            normalizedApiUrl += '/';
-        }
-        
-        const formBody = new URLSearchParams();
-        formBody.append('content', content);
-        
-        const formHeaders: Record<string, string> = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        };
-        
-        let success = false;
-        let finalResponseText = '';
-        let finalStatusCode = 0;
-        const requestBody = formBody.toString();
-        
-        try {
-            const response = await fetch(normalizedApiUrl, {
-                method: 'POST',
-                headers: formHeaders,
-                body: requestBody,
-                credentials: 'omit'
-            });
-            
-            finalResponseText = await response.text();
-            finalStatusCode = response.status;
-            
-            if (response.ok) {
-                try {
-                    if (finalResponseText) {
-                        const responseJson = JSON.parse(finalResponseText);
-                        success = responseJson.code === 0;
-                    } else {
-                        success = true;
-                    }
-                } catch (jsonError) {
-                    // JSON解析失败，依赖HTTP状态码
-                    success = true;
-                }
-            }
-        } catch (error) {
-            console.error('发送到flomo时网络请求失败:', error);
-        }
-        
-        if (!success) {
-            if (finalStatusCode === 200) {
-                new Notice(`发送到flomo失败: 服务器返回200但内容未同步，\n请确认API URL是否正确并包含完整token信息`);
-            } else if (finalStatusCode === 404) {
-                new Notice(`发送到flomo失败: API地址不存在，请检查URL是否正确`);
-            } else if (finalStatusCode === 403 || finalStatusCode === 401) {
-                new Notice(`发送到flomo失败: 权限不足，请确认API URL是否正确`);
-            } else {
-                new Notice(`发送到flomo失败: 错误码 ${finalStatusCode}，请查看控制台日志获取详细信息`);
-            }
-            return false;
-        }
-        
-        return true;
-    } catch (error) {
-        new Notice('发送到flomo时发生错误，请查看控制台日志');
-        return false;
+// 发送内容到flomo - 纯函数，不产生 UI 副作用
+export async function sendToFlomo(content: string, apiUrl: string): Promise<SendResult> {
+    if (!apiUrl || apiUrl.trim() === '') {
+        return { success: false, error: 'flomo API URL 未设置' };
     }
+
+    let normalizedApiUrl = apiUrl.trim();
+
+    if (!normalizedApiUrl.endsWith('/') && !normalizedApiUrl.includes('?')) {
+        normalizedApiUrl += '/';
+    }
+
+    const formBody = new URLSearchParams();
+    formBody.append('content', content);
+
+    const formHeaders: Record<string, string> = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    };
+
+    let response: Response;
+    try {
+        response = await fetch(normalizedApiUrl, {
+            method: 'POST',
+            headers: formHeaders,
+            body: formBody.toString(),
+            credentials: 'omit'
+        });
+    } catch (error) {
+        return { success: false, error: '网络请求失败' };
+    }
+
+    if (!response.ok) {
+        const status = response.status;
+        if (status === 404) {
+            return { success: false, error: 'API地址不存在，请检查URL' };
+        } else if (status === 403 || status === 401) {
+            return { success: false, error: '权限不足，请确认API URL' };
+        } else if (status === 200) {
+            return { success: false, error: '服务器返回200但内容未同步，请确认API URL是否包含完整token' };
+        }
+        return { success: false, error: `服务器错误码 ${status}` };
+    }
+
+    let responseText: string;
+    try {
+        responseText = await response.text();
+    } catch {
+        return { success: true };
+    }
+
+    if (responseText) {
+        try {
+            const responseJson = JSON.parse(responseText);
+            if (responseJson.code === 0) {
+                return { success: true };
+            }
+            return { success: false, error: `flomo 返回错误码 ${responseJson.code}` };
+        } catch {
+            return { success: true };
+        }
+    }
+
+    return { success: true };
 }

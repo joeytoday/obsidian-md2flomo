@@ -23,6 +23,7 @@
   ],
   "exclude": [
     "node_modules",
-    "skills"
+    "skills",
+    "src/__tests__"
   ]
 }

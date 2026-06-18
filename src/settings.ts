@@ -36,11 +36,11 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
                 .onClick(async () => {
                     const testContent = `**测试笔记**\n\n这是一条通过md2flomo插件发送的测试笔记。\n\n标签：#测试 #md2flomo`;
                     new Notice('正在发送测试内容到flomo...');
-                    const success = await sendToFlomo(testContent, this.plugin.settings.flomoApiUrl);
-                    if (success) {
-                        new Notice('测试内容发送成功，请检查flomo是否收到');
+                    const result = await sendToFlomo(testContent, this.plugin.settings.flomoApiUrl);
+                    if (result.success) {
+                        new Notice('✅ 测试内容发送成功，请检查flomo是否收到');
                     } else {
-                        new Notice('测试内容发送失败，请查看控制台日志获取详细信息');
+                        new Notice(`❌ 测试内容发送失败: ${result.error}`);
                     }
                 }));
 

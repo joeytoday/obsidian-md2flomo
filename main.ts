@@ -112,9 +112,9 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
 
             if (sendFlomo) {
                 new Notice('正在导入到flomo...');
-                const success = await sendToFlomo(contentToSend, this.settings.flomoApiUrl);
-                
-                if (success) {
+                const result = await sendToFlomo(contentToSend, this.settings.flomoApiUrl);
+
+                if (result.success) {
                     new Notice('✅ 导入成功！');
                     this.settings.publishedNotes[markdownView.file.path] = {
                         timestamp: Date.now(),
@@ -122,7 +122,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
                     };
                     await this.saveSettings();
                 } else {
-                    new Notice('❌ 导入失败，请检查API配置');
+                    new Notice(`❌ 导入失败: ${result.error}`);
                 }
             } else {
                 new ImportConfirmModal(this.app, contentToSend, this.settings.flomoApiUrl, this, markdownView.file).open();

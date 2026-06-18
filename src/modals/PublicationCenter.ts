@@ -30,9 +30,24 @@ export class PublicationCenter extends Modal {
             text: '发布选中',
             cls: 'md2flomo-publish-button'
         });
-        
+
         publishButton.onclick = async () => {
-            await this.publishSelectedNotes();
+            if (this.selectedNotes.length === 0) {
+                new Notice('❌ 请先选择要发布的笔记');
+                return;
+            }
+
+            publishButton.disabled = true;
+            publishButton.setText('发布中...');
+
+            try {
+                await this.publishSelectedNotes();
+            } catch (error) {
+                console.error('发布过程中发生错误:', error);
+                new Notice('❌ 发布过程中发生错误');
+                publishButton.disabled = false;
+                publishButton.setText('发布选中');
+            }
         };
 
         this.loadNotes();
@@ -78,8 +93,8 @@ export class PublicationCenter extends Modal {
     renderNoteTree() {
         const sections = this.contentEl.querySelectorAll('.md2flomo-category-content');
         sections.forEach(section => section.empty());
-        
-        const unpublishedNotes = this.noteItems.filter(item => !item.isPublished && item.sendFlomo);
+
+        const unpublishedNotes = this.noteItems.filter(item => !item.isPublished);
         const publishedNotes = this.noteItems.filter(item => item.isPublished);
         
         this.renderCategoryTree(unpublishedNotes, 'unpublished');
@@ -204,24 +219,26 @@ export class PublicationCenter extends Modal {
 
     async publishSelectedNotes() {
         if (this.selectedNotes.length === 0) {
-            new Notice('请先选择要发布的笔记');
+            new Notice('❌ 请先选择要发布的笔记');
             return;
         }
-        
-        new Notice(`开始发布 ${this.selectedNotes.length} 篇笔记...`);
-        
+
+        const totalCount = this.selectedNotes.length;
+        new Notice(`开始发布 ${totalCount} 篇笔记...`);
+
         let successCount = 0;
         let failedCount = 0;
-        
-        for (const filePath of this.selectedNotes) {
+
+        for (let i = 0; i < this.selectedNotes.length; i++) {
+            const filePath = this.selectedNotes[i];
             const noteItem = this.noteItems.find(item => item.filePath === filePath);
             if (!noteItem) continue;
-            
+
             try {
                 const contentToSend = buildContentToSend(noteItem.content, noteItem.file.basename, noteItem.tags, noteItem.aliases);
-                const success = await sendToFlomo(contentToSend, this.plugin.settings.flomoApiUrl);
-                
-                if (success) {
+                const result = await sendToFlomo(contentToSend, this.plugin.settings.flomoApiUrl);
+
+                if (result.success) {
                     successCount++;
                     this.plugin.settings.publishedNotes[filePath] = {
                         timestamp: Date.now(),
@@ -234,10 +251,12 @@ export class PublicationCenter extends Modal {
                 console.error(`发布笔记 ${filePath} 时出错:`, error);
                 failedCount++;
             }
+
+            new Notice(`发布进度: ${i + 1}/${totalCount}（成功 ${successCount}，失败 ${failedCount}）`);
         }
-        
+
         await this.plugin.saveSettings();
-        new Notice(`✅ 成功发布 ${successCount} 篇笔记，❌ 失败 ${failedCount} 篇\n请检查flomo客户端确认内容是否实际同步成功`);
+        new Notice(`✅ 成功发布 ${successCount} 篇笔记，❌ 失败 ${failedCount} 篇`);
         await this.loadNotes();
     }
 

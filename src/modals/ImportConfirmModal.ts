@@ -35,30 +35,41 @@ export class ImportConfirmModal extends Modal {
         
         const confirmButton = buttonContainer.createEl('button', { text: '确认导入' });
         confirmButton.onclick = async () => {
-            new Notice('正在导入到flomo...');
-            const success = await sendToFlomo(this.content, this.apiUrl);
-            
-            if (success) {
-                new Notice('✅ 导入成功！');
-                
-                if (this.file) {
-                    const fileContent = await this.app.vault.cachedRead(this.file);
-                    const { sendFlomo } = extractTagsFromFrontmatter(fileContent);
-                    
-                    if (!sendFlomo) {
-                        await updateSendFlomoStatus(this.app, this.file, true);
+            confirmButton.disabled = true;
+            confirmButton.setText('导入中...');
+            try {
+                new Notice('正在导入到flomo...');
+                const result = await sendToFlomo(this.content, this.apiUrl);
+
+                if (result.success) {
+                    new Notice('✅ 导入成功！');
+
+                    if (this.file) {
+                        const fileContent = await this.app.vault.cachedRead(this.file);
+                        const { sendFlomo } = extractTagsFromFrontmatter(fileContent);
+
+                        if (!sendFlomo) {
+                            await updateSendFlomoStatus(this.app, this.file, true);
+                        }
+
+                        this.plugin.settings.publishedNotes[this.file.path] = {
+                            timestamp: Date.now(),
+                            contentHash: calculateContentHash(fileContent)
+                        };
+                        await this.plugin.saveSettings();
                     }
-                    
-                    this.plugin.settings.publishedNotes[this.file.path] = {
-                        timestamp: Date.now(),
-                        contentHash: calculateContentHash(fileContent)
-                    };
-                    await this.plugin.saveSettings();
+                } else {
+                    new Notice(`❌ 导入失败: ${result.error}`);
+                    confirmButton.disabled = false;
+                    confirmButton.setText('确认导入');
                 }
-            } else {
-                new Notice('❌ 导入失败，请检查API配置');
+            } catch (error) {
+                console.error('导入到flomo时发生错误:', error);
+                new Notice('❌ 导入过程中发生错误');
+                confirmButton.disabled = false;
+                confirmButton.setText('确认导入');
             }
-            
+
             this.close();
         };
     }
