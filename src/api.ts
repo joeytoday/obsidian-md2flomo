@@ -1,15 +1,49 @@
 import type { SendResult } from './types';
 
+const FETCH_TIMEOUT_MS = 30000;
+
+function isValidFlomoUrl(urlString: string): { valid: boolean; error?: string } {
+    let parsed: URL;
+    try {
+        parsed = new URL(urlString);
+    } catch {
+        return { valid: false, error: 'API URL 格式无效' };
+    }
+
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        return { valid: false, error: 'API URL 必须使用 http:// 或 https:// 协议' };
+    }
+
+    if (!parsed.hostname) {
+        return { valid: false, error: 'API URL 缺少主机名' };
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+        return { valid: false, error: 'API URL 不能指向本地地址' };
+    }
+
+    const privatePatterns = [/^10\./, /^172\.(1[6-9]|2\d|3[01])\./, /^192\.168\./, /^169\.254\./];
+    for (const pattern of privatePatterns) {
+        if (pattern.test(hostname)) {
+            return { valid: false, error: 'API URL 不能指向内网地址' };
+        }
+    }
+
+    return { valid: true };
+}
+
 // 发送内容到flomo - 纯函数，不产生 UI 副作用
 export async function sendToFlomo(content: string, apiUrl: string): Promise<SendResult> {
-    if (!apiUrl || apiUrl.trim() === '') {
+    if (!apiUrl || typeof apiUrl !== 'string' || apiUrl.trim() === '') {
         return { success: false, error: 'flomo API URL 未设置' };
     }
 
-    let normalizedApiUrl = apiUrl.trim();
+    const normalizedApiUrl = apiUrl.trim();
 
-    if (!normalizedApiUrl.endsWith('/') && !normalizedApiUrl.includes('?')) {
-        normalizedApiUrl += '/';
+    const urlCheck = isValidFlomoUrl(normalizedApiUrl);
+    if (!urlCheck.valid) {
+        return { success: false, error: urlCheck.error };
     }
 
     const formBody = new URLSearchParams();
@@ -19,17 +53,27 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
         'Content-Type': 'application/x-www-form-urlencoded'
     };
 
+    const requestBody = formBody.toString();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
     let response: Response;
     try {
         response = await fetch(normalizedApiUrl, {
             method: 'POST',
             headers: formHeaders,
-            body: formBody.toString(),
-            credentials: 'omit'
+            body: requestBody,
+            credentials: 'omit',
+            signal: controller.signal
         });
     } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof DOMException && error.name === 'AbortError') {
+            return { success: false, error: '请求超时（30秒），请检查网络连接' };
+        }
         return { success: false, error: '网络请求失败' };
     }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
         const status = response.status;
@@ -37,8 +81,6 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
             return { success: false, error: 'API地址不存在，请检查URL' };
         } else if (status === 403 || status === 401) {
             return { success: false, error: '权限不足，请确认API URL' };
-        } else if (status === 200) {
-            return { success: false, error: '服务器返回200但内容未同步，请确认API URL是否包含完整token' };
         }
         return { success: false, error: `服务器错误码 ${status}` };
     }
@@ -47,7 +89,7 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
     try {
         responseText = await response.text();
     } catch {
-        return { success: true };
+        return { success: false, error: '无法读取服务器响应' };
     }
 
     if (responseText) {
@@ -58,7 +100,7 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
             }
             return { success: false, error: `flomo 返回错误码 ${responseJson.code}` };
         } catch {
-            return { success: true };
+            return { success: false, error: '服务器响应格式异常，请检查 API URL 是否正确' };
         }
     }
 
