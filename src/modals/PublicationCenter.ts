@@ -1,6 +1,6 @@
 import { App, Modal, Notice } from 'obsidian';
 import type { IFlomoPlugin, NoteItem, TreeNode } from '../types';
-import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, isNoteAlreadyPublished, calculateContentHash } from '../utils';
+import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, calculateContentHash } from '../utils';
 import { sendToFlomo } from '../api';
 
 export class PublicationCenter extends Modal {

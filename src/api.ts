@@ -68,10 +68,8 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
         });
     } catch (error) {
         clearTimeout(timeoutId);
-        if (error instanceof DOMException && error.name === 'AbortError') {
-            return { success: false, error: '请求超时（30秒），请检查网络连接' };
-        }
-        return { success: false, error: '网络请求失败' };
+        const isAbort = error instanceof Error && error.name === 'AbortError';
+        return { success: false, error: isAbort ? '请求超时（30秒），请检查网络连接' : '网络请求失败' };
     }
     clearTimeout(timeoutId);
 
