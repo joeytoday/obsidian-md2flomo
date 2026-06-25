@@ -1,7 +1,7 @@
 import { App, Modal, Notice, TFile } from 'obsidian';
 import type { IFlomoPlugin } from '../types';
 import { sendToFlomo } from '../api';
-import { updateSendFlomoStatus } from '../utils';
+import { updateSendFlomoStatus, markAsPublished } from '../utils';
 
 export class BlockImportConfirmModal extends Modal {
     private blocks: string[];
@@ -93,6 +93,7 @@ export class BlockImportConfirmModal extends Modal {
 
             const totalCount = this.selectedBlocks.length;
             let successCount = 0;
+            let failedCount = 0;
 
             for (let i = 0; i < this.selectedBlocks.length; i++) {
                 if (this.cancelRequested) {
@@ -104,6 +105,9 @@ export class BlockImportConfirmModal extends Modal {
                 const result = await sendToFlomo(block, this.apiUrl);
                 if (result.success) {
                     successCount++;
+                } else {
+                    failedCount++;
+                    console.warn(`导入 block ${index} 失败: ${result.error}`);
                 }
 
                 publishButton.setText(`导入中 ${i + 1}/${totalCount}...`);
@@ -114,10 +118,16 @@ export class BlockImportConfirmModal extends Modal {
             if (this.cancelRequested) {
                 new Notice(`已取消导入（已完成 ${successCount}/${totalCount}）`);
             } else if (successCount > 0) {
-                new Notice(`✅ 成功导入 ${successCount} 条内容`);
+                if (failedCount > 0) {
+                    new Notice(`✅ 成功导入 ${successCount} 条，失败 ${failedCount} 条`);
+                } else {
+                    new Notice(`✅ 成功导入 ${successCount} 条内容`);
+                }
 
                 if (this.file) {
                     await updateSendFlomoStatus(this.app, this.file, true);
+                    const currentContent = await this.app.vault.cachedRead(this.file);
+                    await markAsPublished(this.plugin, this.file.path, currentContent);
                 }
             } else {
                 new Notice('❌ 导入失败，请检查API配置');

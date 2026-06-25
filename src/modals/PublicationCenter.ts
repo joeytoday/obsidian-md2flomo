@@ -1,6 +1,6 @@
 import { App, Modal, Notice } from 'obsidian';
 import type { IFlomoPlugin, NoteItem, TreeNode } from '../types';
-import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, calculateContentHash } from '../utils';
+import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, calculateContentHash, updateSendFlomoStatus } from '../utils';
 import { sendToFlomo } from '../api';
 
 export class PublicationCenter extends Modal {
@@ -288,9 +288,12 @@ export class PublicationCenter extends Modal {
 
                 if (result.success) {
                     successCount++;
-                    await markAsPublished(this.plugin, filePath, noteItem.content);
+                    await updateSendFlomoStatus(this.app, noteItem.file, true);
+                    const currentContent = await this.app.vault.cachedRead(noteItem.file);
+                    await markAsPublished(this.plugin, filePath, currentContent);
                 } else {
                     failedCount++;
+                    console.warn(`发布笔记 ${filePath} 失败: ${result.error}`);
                 }
             } catch (error) {
                 console.error(`发布笔记 ${filePath} 时出错:`, error);

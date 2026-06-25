@@ -19,7 +19,11 @@ function isValidFlomoUrl(urlString: string): { valid: boolean; error?: string } 
     }
 
     const hostname = parsed.hostname.toLowerCase();
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+
+    // 阻止本地地址（含 IPv6-mapped IPv4）
+    const localHostnames = ['localhost', '127.0.0.1', '::1', '0.0.0.0'];
+    const ipv6MappedLocal = /^::ffff:(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/;
+    if (localHostnames.includes(hostname) || ipv6MappedLocal.test(hostname)) {
         return { valid: false, error: 'API URL 不能指向本地地址' };
     }
 
@@ -46,6 +50,12 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
         return { success: false, error: urlCheck.error };
     }
 
+    // 补全尾斜杠，flomo API 要求 URL 以 / 结尾
+    let fetchUrl = normalizedApiUrl;
+    if (!fetchUrl.endsWith('/') && !fetchUrl.includes('?')) {
+        fetchUrl += '/';
+    }
+
     const formBody = new URLSearchParams();
     formBody.append('content', content);
 
@@ -59,7 +69,7 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
 
     let response: Response;
     try {
-        response = await fetch(normalizedApiUrl, {
+        response = await fetch(fetchUrl, {
             method: 'POST',
             headers: formHeaders,
             body: requestBody,

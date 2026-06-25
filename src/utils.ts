@@ -79,7 +79,7 @@ export function buildContentToSend(fileContent: string, fileName: string, tags: 
     return contentToSend;
 }
 
-// 计算内容哈希值（使用 FNV-1a 64位变体，降低碰撞率）
+// 计算内容哈希值（双路 FNV-1a 32位拼接，降低碰撞率）
 export function calculateContentHash(content: string): string {
     if (content.length === 0) return '0';
 
@@ -181,7 +181,7 @@ export function buildDirectoryTree(noteItem: NoteItem, pathParts: string[], tree
 }
 
 // 校验当前是否有有效的 Markdown 文件（从 main.ts 提取）
-export function getValidatedActiveFile(app: import('obsidian').App): { view: MarkdownView; file: TFile } | null {
+export function getValidatedActiveFile(app: App): { view: MarkdownView; file: TFile } | null {
     const view = app.workspace.getActiveViewOfType(MarkdownView);
     if (!view) {
         new Notice('❌ 请先打开一个Markdown文件');

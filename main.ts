@@ -1,7 +1,8 @@
 import { MarkdownView, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS } from './src/types';
 import type { Md2FlomoSettings, IFlomoPlugin } from './src/types';
-import { extractTagsFromFrontmatter, buildContentToSend, getValidatedActiveFile, splitContentToBlocks } from './src/utils';
+import { extractTagsFromFrontmatter, buildContentToSend, getValidatedActiveFile, splitContentToBlocks, updateSendFlomoStatus, markAsPublished } from './src/utils';
+import { sendToFlomo } from './src/api';
 import { ImportConfirmModal } from './src/modals/ImportConfirmModal';
 import { BlockImportConfirmModal } from './src/modals/BlockImportConfirmModal';
 import { PublicationCenter } from './src/modals/PublicationCenter';
@@ -72,6 +73,13 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+        // 迁移旧版 DJB2 哈希（十进制字符串）：保留记录但标记哈希无效，避免误判发布状态
+        for (const [path, record] of Object.entries(this.settings.publishedNotes)) {
+            if (/^-?\d+$/.test(record.contentHash) && record.contentHash !== '0') {
+                record.contentHash = '';
+            }
+        }
     }
 
     async saveSettings() {
@@ -91,10 +99,24 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
         try {
             const fileContent = await this.app.vault.cachedRead(file);
             const fileName = file.basename;
-            const { tags, aliases } = extractTagsFromFrontmatter(fileContent);
-            const contentToSend = buildContentToSend(fileContent, fileName, tags, aliases);
+            const { tags, aliases, sendFlomo } = extractTagsFromFrontmatter(fileContent);
 
-            new ImportConfirmModal(this.app, contentToSend, this.settings.flomoApiUrl, this, file, fileContent).open();
+            if (sendFlomo) {
+                const contentToSend = buildContentToSend(fileContent, fileName, tags, aliases);
+                new Notice('正在导入到flomo...');
+                const result = await sendToFlomo(contentToSend, this.settings.flomoApiUrl);
+                if (result.success) {
+                    await updateSendFlomoStatus(this.app, file, true);
+                    const currentContent = await this.app.vault.cachedRead(file);
+                    await markAsPublished(this, file.path, currentContent);
+                    new Notice('✅ 发布成功');
+                } else {
+                    new Notice(`❌ 发布失败: ${result.error}`);
+                }
+            } else {
+                const contentToSend = buildContentToSend(fileContent, fileName, tags, aliases);
+                new ImportConfirmModal(this.app, contentToSend, this.settings.flomoApiUrl, this, file, fileContent).open();
+            }
         } catch (error) {
             console.error('发布笔记时发生错误:', error);
             new Notice('❌ 处理文件时发生错误');

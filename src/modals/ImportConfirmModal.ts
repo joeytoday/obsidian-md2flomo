@@ -64,7 +64,8 @@ export class ImportConfirmModal extends Modal {
                         await updateSendFlomoStatus(this.app, this.file, true);
                     }
 
-                    await markAsPublished(this.plugin, this.file.path, this.fileContent);
+                    const currentContent = await this.app.vault.cachedRead(this.file);
+                    await markAsPublished(this.plugin, this.file.path, currentContent);
                     new Notice('已标记为已发布');
                 } else {
                     new Notice(`❌ 发布失败: ${result.error}`);
