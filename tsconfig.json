@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
     "target": "ES2018",
     "allowJs": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "skipLibCheck": true,
     "lib": [
       "DOM",
       "ES2018"
@@ -22,6 +22,7 @@
   "exclude": [
     "node_modules",
     "skills",
-    "src/__tests__"
+    "src/__tests__",
+    "vitest.config.ts"
   ]
 }

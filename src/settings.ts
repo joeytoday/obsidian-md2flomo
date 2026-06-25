@@ -24,10 +24,12 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
                 text
                     .setPlaceholder('https://flomoapp.com/iwh/...')
                     .setValue(this.plugin.settings.flomoApiUrl)
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.flomoApiUrl = value;
-                        await this.plugin.saveSettings();
                     });
+                text.inputEl.addEventListener('blur', async () => {
+                    await this.plugin.saveSettings();
+                });
             });
 
         new Setting(containerEl)

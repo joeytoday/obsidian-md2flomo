@@ -46,12 +46,17 @@ export function removeFrontmatter(content: string): string {
     return content.replace(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/, '');
 }
 
-// 移除Markdown格式（加粗、斜体等）
+// 移除Markdown格式（加粗、斜体等）——只匹配紧贴单词字符的标记
 export function removeMarkdownFormatting(content: string): string {
     let cleanContent = content.replace(/\*\*(.*?)\*\*/g, '$1');
-    cleanContent = cleanContent.replace(/\*(.*?)\*/g, '$1');
-    cleanContent = cleanContent.replace(/_(.*?)_/g, '$1');
+    cleanContent = cleanContent.replace(/\*(?=\S)(.*?)(?<=\S)\*/g, '$1');
+    cleanContent = cleanContent.replace(/_(?=\S)(.*?)(?<=\S)_/g, '$1');
     return cleanContent;
+}
+
+// 格式化标签为 flomo 格式
+function formatTags(tags: string[]): string {
+    return tags.map(tag => `#${tag.replace(/\s+/g, '')}`).join(' ');
 }
 
 // 构建发送到flomo的内容
@@ -73,7 +78,7 @@ export function buildContentToSend(fileContent: string, fileName: string, tags: 
         }
     }
     if (tags.length > 0) {
-        contentToSend += tags.map(tag => `#${tag.replace(/\s+/g, '')}`).join(' ');
+        contentToSend += formatTags(tags);
     }
 
     return contentToSend;
@@ -118,7 +123,17 @@ export function isNoteAlreadyPublished(
 ): boolean {
     const record = plugin.settings.publishedNotes[filePath];
     if (!record) return false;
+    if (!record.contentHash) return false;
     return record.contentHash === calculateContentHash(content);
+}
+
+// 撤回笔记的发布状态
+export async function unmarkAsPublished(
+    plugin: IFlomoPlugin,
+    filePath: string
+): Promise<void> {
+    delete plugin.settings.publishedNotes[filePath];
+    await plugin.saveSettings();
 }
 
 // 更新文件的YAML front matter中的send-flomo属性
@@ -161,17 +176,11 @@ export async function updateSendFlomoStatus(app: App, file: TFile, isSent: boole
 // 构建目录树
 export function buildDirectoryTree(noteItem: NoteItem, pathParts: string[], treeData: TreeNode): void {
     if (pathParts.length === 0) {
-        if (!treeData.files) {
-            treeData.files = [];
-        }
         treeData.files.push(noteItem);
         return;
     }
 
     const currentPart = pathParts[0];
-    if (!treeData.subfolders) {
-        treeData.subfolders = {};
-    }
 
     if (!treeData.subfolders[currentPart]) {
         treeData.subfolders[currentPart] = { files: [], subfolders: {} };
@@ -206,8 +215,7 @@ export function splitContentToBlocks(fileContent: string, tags: string[]): strin
         block = block.trim();
         if (block) {
             if (tags.length > 0) {
-                const tagsText = tags.map(tag => `#${tag.replace(/\s+/g, '')}`).join(' ');
-                block += '\n' + tagsText;
+                block += '\n' + formatTags(tags);
             }
             blocks.push(block);
         }

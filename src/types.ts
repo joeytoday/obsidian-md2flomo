@@ -22,12 +22,12 @@ export interface SendResult {
 // 笔记项接口
 export interface NoteItem {
     file: TFile;
-    content: string;
     tags: string[];
     sendFlomo: boolean;
     filePath: string;
     directoryPath: string;
     isPublished: boolean;
+    hasChanged: boolean;
     aliases?: string | string[];
 }
 

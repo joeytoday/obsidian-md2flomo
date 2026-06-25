@@ -1,13 +1,12 @@
 import { App, Modal, Notice } from 'obsidian';
 import type { IFlomoPlugin, NoteItem, TreeNode } from '../types';
-import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, calculateContentHash, updateSendFlomoStatus } from '../utils';
+import { extractTagsFromFrontmatter, buildContentToSend, buildDirectoryTree, markAsPublished, calculateContentHash, updateSendFlomoStatus, unmarkAsPublished } from '../utils';
 import { sendToFlomo } from '../api';
 
 export class PublicationCenter extends Modal {
     private plugin: IFlomoPlugin;
-    private selectedNotes: string[] = [];
+    private selectedNotes: Set<string> = new Set();
     private noteItems: NoteItem[] = [];
-    private treeData: TreeNode = { files: [], subfolders: {} };
     private isLoading = false;
     private isPublishing = false;
     private cancelRequested = false;
@@ -49,7 +48,7 @@ export class PublicationCenter extends Modal {
         });
 
         publishButton.onclick = async () => {
-            if (this.selectedNotes.length === 0) {
+            if (this.selectedNotes.size === 0) {
                 new Notice('❌ 请先选择要发布的笔记');
                 return;
             }
@@ -82,7 +81,6 @@ export class PublicationCenter extends Modal {
 
     async loadNotes() {
         this.noteItems = [];
-        this.treeData = { files: [], subfolders: {} };
         this.checkboxMap.clear();
 
         const allFiles = this.app.vault.getMarkdownFiles();
@@ -96,19 +94,23 @@ export class PublicationCenter extends Modal {
                 const directoryPath = file.parent?.path || '';
                 const isPublished = this.plugin.settings.publishedNotes[filePath] !== undefined;
 
+                const record = this.plugin.settings.publishedNotes[filePath];
+                const hasChanged = record?.contentHash
+                    ? record.contentHash !== calculateContentHash(content)
+                    : false;
+
                 const noteItem: NoteItem = {
                     file,
-                    content,
                     tags,
                     sendFlomo,
                     filePath,
                     directoryPath,
                     isPublished,
+                    hasChanged,
                     aliases
                 };
 
                 this.noteItems.push(noteItem);
-                buildDirectoryTree(noteItem, directoryPath.split('/'), this.treeData);
             } catch (error) {
                 console.error(`处理文件 ${file.name} 时出错:`, error);
             }
@@ -149,14 +151,14 @@ export class PublicationCenter extends Modal {
 
             if (category !== 'published') {
                 const checkbox = fileItem.createEl('input', { type: 'checkbox', attr: { 'aria-label': `选择 ${file.file.name}` } });
-                checkbox.checked = this.selectedNotes.includes(file.filePath);
+                checkbox.checked = this.selectedNotes.has(file.filePath);
                 this.checkboxMap.set(file.filePath, checkbox);
                 checkbox.addEventListener('change', (event) => {
                     const isChecked = (event.target as HTMLInputElement).checked;
                     if (isChecked) {
-                        this.selectedNotes.push(file.filePath);
+                        this.selectedNotes.add(file.filePath);
                     } else {
-                        this.selectedNotes = this.selectedNotes.filter(path => path !== file.filePath);
+                        this.selectedNotes.delete(file.filePath);
                     }
                 });
             } else {
@@ -174,9 +176,45 @@ export class PublicationCenter extends Modal {
                     const dateEl = fileInfo.createEl('span', { cls: 'md2flomo-publish-date' });
                     dateEl.setText(`发布于 ${new Date(record.timestamp).toLocaleDateString()}`);
 
-                    if (record.contentHash !== calculateContentHash(file.content)) {
+                    if (file.hasChanged) {
                         fileInfo.createEl('span', { cls: 'md2flomo-changed-icon', text: ' ✏️', attr: { title: '内容已变更' } });
                     }
+                }
+
+                const actionContainer = fileItem.createDiv({ cls: 'md2flomo-file-actions' });
+
+                const unmarkButton = actionContainer.createEl('button', { text: '撤回', cls: 'md2flomo-btn-secondary md2flomo-btn-small' });
+                unmarkButton.onclick = async () => {
+                    unmarkButton.disabled = true;
+                    await unmarkAsPublished(this.plugin, file.filePath);
+                    new Notice(`已撤回 ${file.file.name} 的发布状态`);
+                    await this.loadNotes();
+                };
+
+                if (file.hasChanged) {
+                    const republishButton = actionContainer.createEl('button', { text: '重新发布', cls: 'md2flomo-btn-primary md2flomo-btn-small' });
+                    republishButton.onclick = async () => {
+                        republishButton.disabled = true;
+                        try {
+                            const content = await this.app.vault.read(file.file);
+                            const contentToSend = buildContentToSend(content, file.file.basename, file.tags, file.aliases);
+                            const result = await sendToFlomo(contentToSend, this.plugin.settings.flomoApiUrl);
+                            if (result.success) {
+                                await updateSendFlomoStatus(this.app, file.file, true);
+                                const updatedContent = await this.app.vault.read(file.file);
+                                await markAsPublished(this.plugin, file.filePath, updatedContent);
+                                new Notice(`✅ ${file.file.name} 重新发布成功`);
+                                await this.loadNotes();
+                            } else {
+                                new Notice(`❌ 重新发布失败: ${result.error}`);
+                                republishButton.disabled = false;
+                            }
+                        } catch (error) {
+                            console.error(`重新发布 ${file.filePath} 时出错:`, error);
+                            new Notice('❌ 重新发布时发生错误');
+                            republishButton.disabled = false;
+                        }
+                    };
                 }
             }
         }
@@ -218,11 +256,9 @@ export class PublicationCenter extends Modal {
     toggleFolderSelection(node: TreeNode, isSelected: boolean) {
         for (const file of node.files) {
             if (isSelected) {
-                if (!this.selectedNotes.includes(file.filePath)) {
-                    this.selectedNotes.push(file.filePath);
-                }
+                this.selectedNotes.add(file.filePath);
             } else {
-                this.selectedNotes = this.selectedNotes.filter(path => path !== file.filePath);
+                this.selectedNotes.delete(file.filePath);
             }
 
             const checkbox = this.checkboxMap.get(file.filePath);
@@ -264,33 +300,35 @@ export class PublicationCenter extends Modal {
     }
 
     async publishSelectedNotes(publishButton: HTMLButtonElement) {
-        if (this.selectedNotes.length === 0) {
+        if (this.selectedNotes.size === 0) {
             new Notice('❌ 请先选择要发布的笔记');
             return;
         }
 
-        const totalCount = this.selectedNotes.length;
+        const filePaths = Array.from(this.selectedNotes);
+        const totalCount = filePaths.length;
         let successCount = 0;
         let failedCount = 0;
 
-        for (let i = 0; i < this.selectedNotes.length; i++) {
+        for (let i = 0; i < filePaths.length; i++) {
             if (this.cancelRequested) {
                 break;
             }
 
-            const filePath = this.selectedNotes[i];
+            const filePath = filePaths[i];
             const noteItem = this.noteItems.find(item => item.filePath === filePath);
             if (!noteItem) continue;
 
             try {
-                const contentToSend = buildContentToSend(noteItem.content, noteItem.file.basename, noteItem.tags, noteItem.aliases);
+                const noteContent = await this.app.vault.cachedRead(noteItem.file);
+                const contentToSend = buildContentToSend(noteContent, noteItem.file.basename, noteItem.tags, noteItem.aliases);
                 const result = await sendToFlomo(contentToSend, this.plugin.settings.flomoApiUrl);
 
                 if (result.success) {
                     successCount++;
                     await updateSendFlomoStatus(this.app, noteItem.file, true);
-                    const currentContent = await this.app.vault.cachedRead(noteItem.file);
-                    await markAsPublished(this.plugin, filePath, currentContent);
+                    const updatedContent = await this.app.vault.read(noteItem.file);
+                    await markAsPublished(this.plugin, filePath, updatedContent);
                 } else {
                     failedCount++;
                     console.warn(`发布笔记 ${filePath} 失败: ${result.error}`);
@@ -304,10 +342,13 @@ export class PublicationCenter extends Modal {
         }
 
         if (this.cancelRequested) {
+            await this.plugin.saveSettings();
             new Notice(`已取消发布（成功 ${successCount}，失败 ${failedCount}）`);
             publishButton.disabled = false;
             publishButton.setText('发布选中');
+            await this.loadNotes();
         } else {
+            await this.plugin.saveSettings();
             new Notice(`发布完成：成功 ${successCount} 篇，失败 ${failedCount} 篇`);
             publishButton.disabled = false;
             publishButton.setText('发布选中');

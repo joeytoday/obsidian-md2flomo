@@ -1,7 +1,7 @@
 import { MarkdownView, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS } from './src/types';
 import type { Md2FlomoSettings, IFlomoPlugin } from './src/types';
-import { extractTagsFromFrontmatter, buildContentToSend, getValidatedActiveFile, splitContentToBlocks, updateSendFlomoStatus, markAsPublished } from './src/utils';
+import { extractTagsFromFrontmatter, buildContentToSend, getValidatedActiveFile, splitContentToBlocks, updateSendFlomoStatus, markAsPublished, isNoteAlreadyPublished } from './src/utils';
 import { sendToFlomo } from './src/api';
 import { ImportConfirmModal } from './src/modals/ImportConfirmModal';
 import { BlockImportConfirmModal } from './src/modals/BlockImportConfirmModal';
@@ -102,13 +102,18 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
             const { tags, aliases, sendFlomo } = extractTagsFromFrontmatter(fileContent);
 
             if (sendFlomo) {
+                const currentContent = await this.app.vault.read(file);
+                if (isNoteAlreadyPublished(this, file.path, currentContent)) {
+                    new Notice('该笔记已发布且内容未变更，跳过重复发布');
+                    return;
+                }
+
                 const contentToSend = buildContentToSend(fileContent, fileName, tags, aliases);
-                new Notice('正在导入到flomo...');
                 const result = await sendToFlomo(contentToSend, this.settings.flomoApiUrl);
                 if (result.success) {
                     await updateSendFlomoStatus(this.app, file, true);
-                    const currentContent = await this.app.vault.cachedRead(file);
-                    await markAsPublished(this, file.path, currentContent);
+                    const updatedContent = await this.app.vault.read(file);
+                    await markAsPublished(this, file.path, updatedContent);
                     new Notice('✅ 发布成功');
                 } else {
                     new Notice(`❌ 发布失败: ${result.error}`);

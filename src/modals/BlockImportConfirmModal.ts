@@ -6,19 +6,19 @@ import { updateSendFlomoStatus, markAsPublished } from '../utils';
 export class BlockImportConfirmModal extends Modal {
     private blocks: string[];
     private apiUrl: string;
-    private file: TFile | null;
+    private file: TFile;
     private plugin: IFlomoPlugin;
-    private selectedBlocks: number[] = [];
+    private selectedBlocks: Set<number> = new Set();
     private isSending = false;
     private cancelRequested = false;
 
-    constructor(app: App, blocks: string[], apiUrl: string, plugin: IFlomoPlugin, file?: TFile) {
+    constructor(app: App, blocks: string[], apiUrl: string, plugin: IFlomoPlugin, file: TFile) {
         super(app);
         this.blocks = blocks;
         this.apiUrl = apiUrl;
-        this.file = file || null;
+        this.file = file;
         this.plugin = plugin;
-        this.selectedBlocks = Array.from({ length: blocks.length }, (_, i) => i);
+        this.selectedBlocks = new Set(Array.from({ length: blocks.length }, (_, i) => i));
     }
 
     onOpen() {
@@ -34,15 +34,13 @@ export class BlockImportConfirmModal extends Modal {
             const blockItem = blocksContainer.createEl('div', { cls: 'md2flomo-block-item' });
 
             const checkbox = blockItem.createEl('input', { type: 'checkbox' });
-            checkbox.checked = this.selectedBlocks.includes(index);
+            checkbox.checked = this.selectedBlocks.has(index);
             checkbox.addEventListener('change', (event) => {
                 const isChecked = (event.target as HTMLInputElement).checked;
                 if (isChecked) {
-                    if (!this.selectedBlocks.includes(index)) {
-                        this.selectedBlocks.push(index);
-                    }
+                    this.selectedBlocks.add(index);
                 } else {
-                    this.selectedBlocks = this.selectedBlocks.filter(i => i !== index);
+                    this.selectedBlocks.delete(index);
                 }
             });
 
@@ -63,7 +61,7 @@ export class BlockImportConfirmModal extends Modal {
 
         const deselectAllButton = buttonContainer.createEl('button', { text: '取消全选', cls: 'md2flomo-btn-secondary' });
         deselectAllButton.onclick = () => {
-            this.selectedBlocks = [];
+            this.selectedBlocks.clear();
             const checkboxes = contentEl.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 (checkbox as HTMLInputElement).checked = false;
@@ -72,7 +70,7 @@ export class BlockImportConfirmModal extends Modal {
 
         const selectAllButton = buttonContainer.createEl('button', { text: '全选', cls: 'md2flomo-btn-secondary' });
         selectAllButton.onclick = () => {
-            this.selectedBlocks = Array.from({ length: this.blocks.length }, (_, i) => i);
+            this.selectedBlocks = new Set(Array.from({ length: this.blocks.length }, (_, i) => i));
             const checkboxes = contentEl.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 (checkbox as HTMLInputElement).checked = true;
@@ -81,7 +79,7 @@ export class BlockImportConfirmModal extends Modal {
 
         const publishButton = buttonContainer.createEl('button', { text: '确认导入', cls: 'md2flomo-btn-primary' });
         publishButton.onclick = async () => {
-            if (this.selectedBlocks.length === 0) {
+            if (this.selectedBlocks.size === 0) {
                 new Notice('❌ 请先选择要发布的内容');
                 return;
             }
@@ -91,16 +89,17 @@ export class BlockImportConfirmModal extends Modal {
             publishButton.disabled = true;
             publishButton.setText('导入中...');
 
-            const totalCount = this.selectedBlocks.length;
+            const blockIndices = Array.from(this.selectedBlocks);
+            const totalCount = blockIndices.length;
             let successCount = 0;
             let failedCount = 0;
 
-            for (let i = 0; i < this.selectedBlocks.length; i++) {
+            for (let i = 0; i < blockIndices.length; i++) {
                 if (this.cancelRequested) {
                     break;
                 }
 
-                const index = this.selectedBlocks[i];
+                const index = blockIndices[i];
                 const block = this.blocks[index];
                 const result = await sendToFlomo(block, this.apiUrl);
                 if (result.success) {
@@ -124,11 +123,9 @@ export class BlockImportConfirmModal extends Modal {
                     new Notice(`✅ 成功导入 ${successCount} 条内容`);
                 }
 
-                if (this.file) {
-                    await updateSendFlomoStatus(this.app, this.file, true);
-                    const currentContent = await this.app.vault.cachedRead(this.file);
-                    await markAsPublished(this.plugin, this.file.path, currentContent);
-                }
+                await updateSendFlomoStatus(this.app, this.file, true);
+                const updatedContent = await this.app.vault.read(this.file);
+                await markAsPublished(this.plugin, this.file.path, updatedContent);
             } else {
                 new Notice('❌ 导入失败，请检查API配置');
                 publishButton.disabled = false;

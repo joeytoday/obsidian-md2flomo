@@ -280,6 +280,18 @@
     font-size: 12px;
 }
 
+/* === 文件操作按钮 === */
+.md2flomo-file-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.md2flomo-btn-small {
+    padding: 3px 10px;
+    font-size: 12px;
+}
+
 /* === 发布按钮 === */
 .md2flomo-publish-button {
     align-self: flex-end;

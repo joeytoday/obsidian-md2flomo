@@ -1,7 +1,7 @@
 import { App, Modal, Notice, TFile } from 'obsidian';
 import type { IFlomoPlugin } from '../types';
 import { sendToFlomo } from '../api';
-import { updateSendFlomoStatus, markAsPublished, isNoteAlreadyPublished, extractTagsFromFrontmatter } from '../utils';
+import { updateSendFlomoStatus, markAsPublished, isNoteAlreadyPublished } from '../utils';
 
 export class ImportConfirmModal extends Modal {
     private content: string;
@@ -56,17 +56,10 @@ export class ImportConfirmModal extends Modal {
                 const result = await sendToFlomo(this.content, this.apiUrl);
 
                 if (result.success) {
-                    new Notice('✅ 发布成功');
-
-                    const { sendFlomo } = extractTagsFromFrontmatter(this.fileContent);
-
-                    if (!sendFlomo) {
-                        await updateSendFlomoStatus(this.app, this.file, true);
-                    }
-
-                    const currentContent = await this.app.vault.cachedRead(this.file);
-                    await markAsPublished(this.plugin, this.file.path, currentContent);
-                    new Notice('已标记为已发布');
+                    await updateSendFlomoStatus(this.app, this.file, true);
+                    const updatedContent = await this.app.vault.read(this.file);
+                    await markAsPublished(this.plugin, this.file.path, updatedContent);
+                    new Notice('✅ 发布成功并标记为已发布');
                 } else {
                     new Notice(`❌ 发布失败: ${result.error}`);
                     confirmButton.disabled = false;
