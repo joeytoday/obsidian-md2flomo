@@ -1,6 +1,11 @@
 
 # Changelog
 
+## 1.0.2 - 2026-06-27
+
+### Fixed
+- 修复 manifest.json 的 id 字段不符合 Obsidian 社区插件规范（id 只能包含小写字母和连字符）
+
 ## 1.0.1 - 2026-06-27
 
 ### Changed
