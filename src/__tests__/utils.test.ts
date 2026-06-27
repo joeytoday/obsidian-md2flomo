@@ -94,6 +94,24 @@ describe('removeMarkdownFormatting', () => {
     it('无格式文本原样返回', () => {
         expect(removeMarkdownFormatting('普通文本')).toBe('普通文本');
     });
+
+    it('应移除单字符斜体', () => {
+        expect(removeMarkdownFormatting('*a*')).toBe('a');
+        expect(removeMarkdownFormatting('_a_')).toBe('a');
+    });
+
+    it('不移除空格开头的斜体标记', () => {
+        expect(removeMarkdownFormatting('* 空格开头*')).toBe('* 空格开头*');
+        expect(removeMarkdownFormatting('*空格结尾 *')).toBe('*空格结尾 *');
+    });
+
+    it('应处理嵌套加粗斜体', () => {
+        expect(removeMarkdownFormatting('***加粗斜体***')).toBe('加粗斜体');
+    });
+
+    it('空字符串返回空', () => {
+        expect(removeMarkdownFormatting('')).toBe('');
+    });
 });
 
 describe('buildContentToSend', () => {

@@ -80,6 +80,7 @@ export class PublicationCenter extends Modal {
             console.error('加载笔记列表失败:', e);
             this.isLoading = false;
             loadingEl.addClass('md2flomo-content-hidden');
+            new Notice('加载笔记列表失败，请重试');
         });
     }
 

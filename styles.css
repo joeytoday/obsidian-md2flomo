@@ -90,12 +90,6 @@
     border-radius: 4px;
 }
 
-.md2flomo-help h3 {
-    margin-top: 0;
-    margin-bottom: 12px;
-    color: var(--text-title);
-}
-
 .md2flomo-help p {
     margin: 6px 0;
     color: var(--text-muted);

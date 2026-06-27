@@ -1,6 +1,8 @@
 import { requestUrl } from 'obsidian';
 import type { SendResult } from './types';
 
+const REQUEST_TIMEOUT_MS = 30000;
+
 function isValidFlomoUrl(urlString: string): { valid: boolean; error?: string } {
     let parsed: URL;
     try {
@@ -19,6 +21,7 @@ function isValidFlomoUrl(urlString: string): { valid: boolean; error?: string } 
 
     const hostname = parsed.hostname.toLowerCase();
 
+    // 阻止本地地址（含 IPv6-mapped IPv4）
     const localHostnames = ['localhost', '127.0.0.1', '::1', '0.0.0.0'];
     const ipv6MappedLocal = /^::ffff:(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/;
     if (localHostnames.includes(hostname) || ipv6MappedLocal.test(hostname)) {
@@ -48,6 +51,7 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
         return { success: false, error: urlCheck.error };
     }
 
+    // 补全尾斜杠，flomo API 要求 URL 以 / 结尾
     let fetchUrl = normalizedApiUrl;
     if (!fetchUrl.endsWith('/') && !fetchUrl.includes('?')) {
         fetchUrl += '/';
@@ -56,14 +60,20 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
     const formBody = new URLSearchParams();
     formBody.append('content', content);
 
+    const requestPromise = requestUrl({
+        url: fetchUrl,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formBody.toString(),
+        throw: false,
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+        window.setTimeout(() => reject(new Error('timeout')), REQUEST_TIMEOUT_MS)
+    );
+
     try {
-        const response = await requestUrl({
-            url: fetchUrl,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formBody.toString(),
-            throw: false,
-        });
+        const response = await Promise.race([requestPromise, timeoutPromise]);
 
         const status = response.status;
         if (status === 404) {
@@ -89,8 +99,9 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
 
         return { success: true };
     } catch (e: unknown) {
+        console.error('sendToFlomo failed:', e);
         const message = e instanceof Error ? e.message : '';
-        if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+        if (message === 'timeout') {
             return { success: false, error: '请求超时（30秒），请检查网络连接' };
         }
         return { success: false, error: '网络请求失败' };
