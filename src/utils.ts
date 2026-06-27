@@ -1,6 +1,6 @@
-import * as yaml from 'js-yaml';
 import { App, MarkdownView, Notice, TFile } from 'obsidian';
 import type { IFlomoPlugin, NoteItem, TreeNode } from './types';
+import { parseFrontmatter, dumpFrontmatter } from './yaml';
 
 // 从YAML front matter中提取tags、send-flomo状态和aliases
 export function extractTagsFromFrontmatter(content: string): { tags: string[], sendFlomo: boolean, aliases?: string | string[] } {
@@ -11,17 +11,14 @@ export function extractTagsFromFrontmatter(content: string): { tags: string[], s
 
     if (yamlMatch && yamlMatch[1]) {
         try {
-            const frontmatter = yaml.load(yamlMatch[1]) as {
-                tags?: string[] | string;
-                'send-flomo'?: boolean;
-                aliases?: string | string[]
-            };
+            const frontmatter = parseFrontmatter(yamlMatch[1]);
             if (frontmatter) {
-                if (frontmatter.tags) {
-                    if (typeof frontmatter.tags === 'string') {
-                        tags.push(frontmatter.tags);
-                    } else if (Array.isArray(frontmatter.tags)) {
-                        tags.push(...frontmatter.tags);
+                const tagsValue = frontmatter['tags'];
+                if (tagsValue) {
+                    if (typeof tagsValue === 'string') {
+                        tags.push(tagsValue);
+                    } else if (Array.isArray(tagsValue)) {
+                        tags.push(...tagsValue);
                     }
                 }
 
@@ -29,8 +26,9 @@ export function extractTagsFromFrontmatter(content: string): { tags: string[], s
                     sendFlomo = true;
                 }
 
-                if (frontmatter.aliases) {
-                    aliases = frontmatter.aliases;
+                const aliasesValue = frontmatter['aliases'];
+                if (aliasesValue && typeof aliasesValue !== 'boolean') {
+                    aliases = aliasesValue;
                 }
             }
         } catch (e) {
@@ -149,7 +147,7 @@ export async function updateSendFlomoStatus(app: App, file: TFile, isSent: boole
             let frontmatter: Record<string, unknown>;
 
             try {
-                frontmatter = yaml.load(frontmatterContent) as Record<string, unknown>;
+                frontmatter = parseFrontmatter(frontmatterContent);
             } catch (e) {
                 console.error('解析YAML时出错:', e);
                 return false;
@@ -157,11 +155,11 @@ export async function updateSendFlomoStatus(app: App, file: TFile, isSent: boole
 
             frontmatter['send-flomo'] = isSent;
 
-            const updatedYaml = yaml.dump(frontmatter);
+            const updatedYaml = dumpFrontmatter(frontmatter as Record<string, string | boolean | string[]>);
             updatedContent = content.replace(/^---\r?\n([\s\S]*?)\r?\n---/, `---\n${updatedYaml}---`);
         } else {
             const frontmatter = { 'send-flomo': isSent };
-            const yamlContent = yaml.dump(frontmatter);
+            const yamlContent = dumpFrontmatter(frontmatter);
             updatedContent = `---\n${yamlContent}---\n${content}`;
         }
 

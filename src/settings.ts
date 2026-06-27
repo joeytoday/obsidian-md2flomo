@@ -14,7 +14,7 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
         const { containerEl } = this;
 
         containerEl.empty();
-        new Setting(containerEl).setName('md2flomo 插件设置').setHeading();
+        new Setting(containerEl).setName('插件设置').setHeading();
 
         new Setting(containerEl)
             .setName('flomo API')
