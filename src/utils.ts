@@ -49,8 +49,8 @@ export function removeFrontmatter(content: string): string {
 // 移除Markdown格式（加粗、斜体等）——只匹配紧贴单词字符的标记
 export function removeMarkdownFormatting(content: string): string {
     let cleanContent = content.replace(/\*\*(.*?)\*\*/g, '$1');
-    cleanContent = cleanContent.replace(/\*(?=\S)(.*?)(?<=\S)\*/g, '$1');
-    cleanContent = cleanContent.replace(/_(?=\S)(.*?)(?<=\S)_/g, '$1');
+    cleanContent = cleanContent.replace(/\*(\S(?:.*?\S)?)\*/g, '$1');
+    cleanContent = cleanContent.replace(/_(\S(?:.*?\S)?)_/g, '$1');
     return cleanContent;
 }
 

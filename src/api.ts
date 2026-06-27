@@ -1,6 +1,7 @@
+import { requestUrl } from 'obsidian';
 import type { SendResult } from './types';
 
-const FETCH_TIMEOUT_MS = 30000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 function isValidFlomoUrl(urlString: string): { valid: boolean; error?: string } {
     let parsed: URL;
@@ -59,58 +60,50 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
     const formBody = new URLSearchParams();
     formBody.append('content', content);
 
-    const formHeaders: Record<string, string> = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    };
+    const requestPromise = requestUrl({
+        url: fetchUrl,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formBody.toString(),
+        throw: false,
+    });
 
-    const requestBody = formBody.toString();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+        window.setTimeout(() => reject(new Error('timeout')), REQUEST_TIMEOUT_MS)
+    );
 
-    let response: Response;
     try {
-        response = await fetch(fetchUrl, {
-            method: 'POST',
-            headers: formHeaders,
-            body: requestBody,
-            credentials: 'omit',
-            signal: controller.signal
-        });
-    } catch (error) {
-        clearTimeout(timeoutId);
-        const isAbort = error instanceof Error && error.name === 'AbortError';
-        return { success: false, error: isAbort ? '请求超时（30秒），请检查网络连接' : '网络请求失败' };
-    }
-    clearTimeout(timeoutId);
+        const response = await Promise.race([requestPromise, timeoutPromise]);
 
-    if (!response.ok) {
         const status = response.status;
         if (status === 404) {
             return { success: false, error: 'API地址不存在，请检查URL' };
         } else if (status === 403 || status === 401) {
             return { success: false, error: '权限不足，请确认API URL' };
+        } else if (status < 200 || status >= 300) {
+            return { success: false, error: `服务器错误码 ${status}` };
         }
-        return { success: false, error: `服务器错误码 ${status}` };
-    }
 
-    let responseText: string;
-    try {
-        responseText = await response.text();
-    } catch {
-        return { success: false, error: '无法读取服务器响应' };
-    }
-
-    if (responseText) {
-        try {
-            const responseJson = JSON.parse(responseText);
-            if (responseJson.code === 0) {
-                return { success: true };
+        const responseText = response.text;
+        if (responseText) {
+            try {
+                const responseJson: { code?: number } = JSON.parse(responseText);
+                if (responseJson.code === 0) {
+                    return { success: true };
+                }
+                return { success: false, error: `flomo 返回错误码 ${responseJson.code}` };
+            } catch {
+                return { success: false, error: '服务器响应格式异常，请检查 API URL 是否正确' };
             }
-            return { success: false, error: `flomo 返回错误码 ${responseJson.code}` };
-        } catch {
-            return { success: false, error: '服务器响应格式异常，请检查 API URL 是否正确' };
         }
-    }
 
-    return { success: true };
+        return { success: true };
+    } catch (e: unknown) {
+        console.error('sendToFlomo failed:', e);
+        const message = e instanceof Error ? e.message : '';
+        if (message === 'timeout') {
+            return { success: false, error: '请求超时（30秒），请检查网络连接' };
+        }
+        return { success: false, error: '网络请求失败' };
+    }
 }

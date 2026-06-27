@@ -14,7 +14,7 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
         const { containerEl } = this;
 
         containerEl.empty();
-        containerEl.createEl('h2', { text: 'md2flomo 插件设置' });
+        new Setting(containerEl).setName('md2flomo 插件设置').setHeading();
 
         new Setting(containerEl)
             .setName('flomo API')
@@ -27,8 +27,8 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
                     .onChange((value) => {
                         this.plugin.settings.flomoApiUrl = value;
                     });
-                text.inputEl.addEventListener('blur', async () => {
-                    await this.plugin.saveSettings();
+                text.inputEl.addEventListener('blur', () => {
+                    void this.plugin.saveSettings();
                 });
             });
 
@@ -37,19 +37,21 @@ export class Md2FlomoSettingTab extends PluginSettingTab {
             .setDesc('点击此按钮发送一条测试内容到flomo，用于验证API连接是否正常')
             .addButton(button => button
                 .setButtonText('发送测试')
-                .onClick(async () => {
-                    const testContent = `**测试笔记**\n\n这是一条通过md2flomo插件发送的测试笔记。\n\n标签：#测试 #md2flomo`;
-                    new Notice('正在发送测试内容到flomo...');
-                    const result = await sendToFlomo(testContent, this.plugin.settings.flomoApiUrl);
-                    if (result.success) {
-                        new Notice('✅ 测试内容发送成功，请检查flomo是否收到');
-                    } else {
-                        new Notice(`❌ 测试内容发送失败: ${result.error}`);
-                    }
+                .onClick(() => {
+                    void (async () => {
+                        const testContent = `**测试笔记**\n\n这是一条通过md2flomo插件发送的测试笔记。\n\n标签：#测试 #md2flomo`;
+                        new Notice('正在发送测试内容到flomo...');
+                        const result = await sendToFlomo(testContent, this.plugin.settings.flomoApiUrl);
+                        if (result.success) {
+                            new Notice('✅ 测试内容发送成功，请检查flomo是否收到');
+                        } else {
+                            new Notice(`❌ 测试内容发送失败: ${result.error}`);
+                        }
+                    })();
                 }));
 
         const helpEl = containerEl.createEl('div', { cls: 'md2flomo-help' });
-        helpEl.createEl('h3', { text: '使用说明' });
+        new Setting(helpEl).setName('使用说明').setHeading();
         helpEl.createEl('p', { text: '1. 打开一个Markdown文件' });
         helpEl.createEl('p', { text: '2. 点击侧边栏的「导入到flomo」图标，或者使用命令面板' });
         helpEl.createEl('p', { text: '3. 确认内容后点击「确认发布」' });

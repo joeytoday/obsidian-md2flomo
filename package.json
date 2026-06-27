@@ -1,6 +1,6 @@
 {
 	"name": "md2flomo",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "将 Obsidian 中的 Markdown 文档导入到 flomo",
 	"main": "main.js",
 	"scripts": {
@@ -26,7 +26,6 @@
 		"@types/node": "^18.19.0",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
-		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"obsidian": "latest",
 		"tslib": "^2.8.0",
