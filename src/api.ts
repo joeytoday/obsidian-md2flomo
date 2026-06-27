@@ -87,11 +87,13 @@ export async function sendToFlomo(content: string, apiUrl: string): Promise<Send
         const responseText = response.text;
         if (responseText) {
             try {
-                const responseJson: { code?: number } = JSON.parse(responseText);
-                if (responseJson.code === 0) {
+                const parsed: unknown = JSON.parse(responseText);
+                const responseJson = typeof parsed === 'object' && parsed !== null ? parsed as { code?: number } : null;
+                if (responseJson && responseJson.code === 0) {
                     return { success: true };
                 }
-                return { success: false, error: `flomo 返回错误码 ${responseJson.code}` };
+                const code = responseJson?.code;
+                return { success: false, error: `flomo 返回错误码 ${code}` };
             } catch {
                 return { success: false, error: '服务器响应格式异常，请检查 API URL 是否正确' };
             }

@@ -122,7 +122,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
                 const contentToSend = buildContentToSend(fileContent, fileName, tags, aliases);
                 new ImportConfirmModal(this.app, contentToSend, this.settings.flomoApiUrl, this, file, fileContent).open();
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('发布笔记时发生错误:', error);
             new Notice('❌ 处理文件时发生错误');
         }
@@ -149,7 +149,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
             }
 
             new BlockImportConfirmModal(this.app, blocks, this.settings.flomoApiUrl, this, file).open();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('发布block时发生错误:', error);
             new Notice('❌ 处理文件时发生错误');
         }
