@@ -71,11 +71,15 @@ export class PublicationCenter extends Modal {
         };
 
         this.isLoading = true;
-        this.loadNotes().then(() => {
+        void this.loadNotes().then(() => {
             this.isLoading = false;
-            loadingEl.style.display = 'none';
+            loadingEl.addClass('md2flomo-content-hidden');
             categoryContainer.classList.remove('md2flomo-content-hidden');
             categoryContainer.classList.add('md2flomo-content-visible');
+        }).catch((e: unknown) => {
+            console.error('加载笔记列表失败:', e);
+            this.isLoading = false;
+            loadingEl.addClass('md2flomo-content-hidden');
         });
     }
 
@@ -237,8 +241,9 @@ export class PublicationCenter extends Modal {
             toggleButton.addEventListener('click', () => {
                 const content = folderItem.querySelector('.md2flomo-folder-content') as HTMLElement;
                 if (content) {
-                    const isHidden = content.style.display === 'none';
-                    content.style.display = isHidden ? 'block' : 'none';
+                    const isHidden = content.classList.contains('md2flomo-content-hidden');
+                    content.classList.toggle('md2flomo-content-hidden');
+                    content.classList.toggle('md2flomo-content-visible');
                     toggleButton.textContent = isHidden ? '▼' : '▶';
                     toggleButton.setAttribute('aria-expanded', String(isHidden));
                 }

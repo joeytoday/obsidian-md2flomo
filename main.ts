@@ -29,7 +29,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
                 const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (markdownView) {
                     if (!checking) {
-                        this.publishCurrentNote();
+                        void this.publishCurrentNote();
                     }
                     return true;
                 }
@@ -44,7 +44,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
                 const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (markdownView) {
                     if (!checking) {
-                        this.publishCurrentNoteBlocks();
+                        void this.publishCurrentNoteBlocks();
                     }
                     return true;
                 }
@@ -75,7 +75,7 @@ export default class Md2FlomoPlugin extends Plugin implements IFlomoPlugin {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 
         // 迁移旧版 DJB2 哈希（十进制字符串）：保留记录但标记哈希无效，避免误判发布状态
-        for (const [path, record] of Object.entries(this.settings.publishedNotes)) {
+        for (const [, record] of Object.entries(this.settings.publishedNotes)) {
             if (/^-?\d+$/.test(record.contentHash) && record.contentHash !== '0') {
                 record.contentHash = '';
             }
