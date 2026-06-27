@@ -1,8 +1,37 @@
 
 # md2flomo
 
+[中文](#md2flomo) | [English](#english)
+
 一个将 [Obsidian](https://obsidian.md/) 笔记一键发送到 [flomo](https://flomoapp.com/) 的插件。  
 支持标签解析、内容清理、批量发布，帮助你将 Obsidian 的内容快速同步到 flomo。
+
+---
+
+## 📸 使用效果
+
+### 单篇发布
+- 点击侧边栏发布按钮（小飞机图标）
+- 使用命令栏发布
+
+![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
+
+如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
+
+![](./assets/md2flomo-sendstatus.gif)
+
+#### 去除格式效果
+
+![](./assets/md2flomo-sendcard-clean.gif)
+
+#### 发布后台状态修复
+
+![](./assets/md2flomo-pub-status.gif)
+
+### 批量发布
+
+![](./assets/md2flomo-sendnotes.gif)
+
 
 ---
 
@@ -52,43 +81,7 @@
 	- `published`：已发送笔记  
 	- `unpublished`：未发送笔记  
 
----
-
-## 🛠️ 开发规划
-
-- v 0.4.3: 最小可用版本、Obsidian 插件市场上线  
-- v 0.4.0: 格式优化、链接清理、上传反馈  
-- v 0.5.0: 设置界面优化、上传历史记录、错误提示  
-- v 1.0.0: 批量上传、UI 美化、国际化、多语言支持
-
-详细版本更新见 👉 [CHANGELOG](./CHNANGELOG.md)
-
----
-
-## 📸 使用截图
-
-### 单篇发布
-- 点击侧边栏发布按钮（小飞机图标）
-- 使用命令栏发布
-
-![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
-
-如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
-
-![](./assets/md2flomo-sendstatus.gif)
-
-#### 去除格式效果
-
-![](./assets/md2flomo-sendcard-clean.gif)
-
-#### 发布后台状态修复
-
-![](./assets/md2flomo-pub-status.gif)
-
-### 批量发布
-
-![](./assets/md2flomo-sendnotes.gif)
-
+详细版本更新见 👉 [CHANGELOG](./CHANGELOG.md)
 
 ---
 
@@ -102,4 +95,100 @@
 ## 📬 联系方式
 
 - 作者：@joeytoday 
-- 邮箱： joeytoday247@outlook.com 
+- 邮箱： joeytoday632@outlook.com 
+
+---
+
+# English
+
+An [Obsidian](https://obsidian.md/) plugin that sends your notes to [flomo](https://flomoapp.com/) with one click.  
+Supports tag extraction, content cleanup, and batch publishing — helping you sync Obsidian content to flomo effortlessly.
+
+---
+
+## 📸 Screenshots
+
+### Single Note Publish
+- Click the sidebar publish icon (paper plane)
+- Use the command palette to publish
+
+![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
+
+When `send-flomo` is `false`, a confirmation dialog appears before publishing. After confirmation, the status updates to `true`.
+
+![](./assets/md2flomo-sendstatus.gif)
+
+#### Clean Formatting
+
+![](./assets/md2flomo-sendcard-clean.gif)
+
+#### Publish Status Fix
+
+![](./assets/md2flomo-pub-status.gif)
+
+### Batch Publish
+
+![](./assets/md2flomo-sendnotes.gif)
+
+---
+
+## ✨ Features
+
+- 🔑 Configure flomo API Token in plugin settings
+- ✅ Test API connectivity (send test content)
+- 📝 Publish single notes to flomo
+- 📌 Sidebar icon: one-click publish for the current note
+- 🏷️ Convert frontmatter `tags` to flomo tags
+- 📂 Content formatting:
+	- Bold title
+	- Note body content
+	- Aliases displayed at the bottom
+	- Tags appended below content
+- 🎈 Batch publish dashboard
+- 📊 Publish status management:
+	- Published → `published`
+	- Unpublished → `unpublished`
+
+---
+
+## 🚀 Installation
+
+### Manual Installation
+
+1. Go to the Releases page and download the latest `md2flomo-0.5.3.zip` plugin package.
+2. Unzip and place the folder in `your-vault/.obsidian/plugins/`.
+3. Open Obsidian Settings → Community Plugins → disable Safe Mode.
+4. Find md2flomo in Community Plugins and enable it.
+
+### Install from Community Plugin Market
+> Currently under review.
+
+1. Open Obsidian Settings → Community Plugins → disable Safe Mode → Browse community plugins
+2. Search for `md2flomo`, click Install and Enable.
+
+---
+
+## ⚙️ Usage
+
+1. Enter your flomo API Token in **Settings → Plugin Settings**
+2. Click "Send test content" to verify the connection
+3. Open any note, click the sidebar icon → publish to flomo
+4. View publish status in the dashboard:
+	- `published`: sent notes
+	- `unpublished`: unsent notes
+
+See [CHANGELOG](./CHANGELOG.md) for version updates.
+
+---
+
+## 🤝 Contributing
+
+PRs and Issues are welcome!  
+This project is licensed under the [MIT License](./LICENSE).
+
+---
+
+## 📬 Contact
+
+- Author: @joeytoday
+- Email: joeytoday632@outlook.com

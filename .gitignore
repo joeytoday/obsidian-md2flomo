@@ -1,5 +1,6 @@
 # vscode
 .vscode 
+.qwen
 
 # Intellij
 *.iml
@@ -20,3 +21,4 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+skills/
