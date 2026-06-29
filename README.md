@@ -18,20 +18,19 @@
 
 如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
 
-![](./assets/md2flomo-sendstatus.gif)
+<img width="2934" height="1368" alt="md2flomo-sendstatus" src="https://github.com/user-attachments/assets/59982768-8cb5-47b1-bec3-201f318e61ed" />
 
 #### 去除格式效果
 
-![](./assets/md2flomo-sendcard-clean.gif)
+<img width="2908" height="1582" alt="md2flomo-sendcard-clean" src="https://github.com/user-attachments/assets/22f2bb83-e74e-4c28-96e9-8c3e51a57840" />
 
 #### 发布后台状态修复
 
-![](./assets/md2flomo-pub-status.gif)
+https://github.com/user-attachments/assets/60cc5319-4a1c-4bfe-b784-777a66d467ce
 
 ### 批量发布
 
-![](./assets/md2flomo-sendnotes.gif)
-
+https://github.com/user-attachments/assets/8d836b9a-f9e6-4dbe-8bcd-c61234707127
 
 ---
 
