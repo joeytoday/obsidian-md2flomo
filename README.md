@@ -14,7 +14,7 @@
 - 点击侧边栏发布按钮（小飞机图标）
 - 使用命令栏发布
 
-![](https://joey-md-asset.oss-cn-hangzhou.aliyuncs.com/img/202508311619272.png)
+<img width="1501" height="719" alt="202508311619272" src="https://github.com/user-attachments/assets/a247843b-5a77-4bdc-897f-4b9b97514004" />
 
 如果 `send-flomo` 状态为 `false`，点击发布后会确认内容，确认后此状态会更新为 `true`。
 
