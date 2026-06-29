@@ -64,7 +64,6 @@ https://github.com/user-attachments/assets/8d836b9a-f9e6-4dbe-8bcd-c61234707127
 5. 启用插件
 
 ### 在插件市场安装
-> 目前还在审核中。
 
 1. 进入 Obsidian 设置，选择【第三方插件】，关闭【安全模式】，浏览社区插件
 2. 在社区插件中搜索 `md2flomo`，点击安装并启用。
@@ -160,7 +159,6 @@ When `send-flomo` is `false`, a confirmation dialog appears before publishing. A
 4. Find md2flomo in Community Plugins and enable it.
 
 ### Install from Community Plugin Market
-> Currently under review.
 
 1. Open Obsidian Settings → Community Plugins → disable Safe Mode → Browse community plugins
 2. Search for `md2flomo`, click Install and Enable.
